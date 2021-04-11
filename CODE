@@ -1,0 +1,57 @@
+import glob
+import requests
+import cv2
+import subprocess
+import json
+import matplotlib.pyplot as plt
+
+
+file2=""
+cam = cv2.VideoCapture(0)
+
+cv2.namedWindow("Press Spacebar to Capture the Image")
+
+while True:
+    ret, frame = cam.read()
+    if not ret:
+        print("failed to grab frame")
+        break
+    cv2.imshow("test", frame)
+    k = cv2.waitKey(1)
+    if k%256 == 32:
+        img_name = "C:\\Users\\HP\\Desktop\\test.jpg"
+        cv2.imwrite(img_name, frame)
+        print("Image Uploaded Successfully")
+        file2=file2+img_name
+        break
+        
+cam.release()
+cv2.destroyAllWindows()
+ 
+
+ max_score=-1
+highest_matched_image=""
+for image in glob.glob("C:\\Users\\HP\\Desktop\\PAWAN\\*.jpg"):
+    file1=image
+    url=f"https://api.upai.io/v1/model-serving/models/{'604b29873ef68922d44a4b9a'}/predict"
+    key='7445d58974964181a402770b24d7fd01'
+    headers={'x-api-key':key}
+    command="curl -X POST -H x-api-key:{} -F file1=@{} -F file2=@{} {}".format(key,file1,file2,url);
+    res=subprocess.check_output(command,shell=True)
+    print(res)
+    res=res.decode("utf-8")
+    res = json.loads(res)
+    curr_score=res['data']['output']['results']['score']
+    if(curr_score>=max_score):
+        max_score=curr_score
+        highest_matched_image=""
+        highest_matched_image+=file1
+
+if(max_score<0.5):
+    print("NO MATCH FOUND")
+else:
+    img=cv2.imread(highest_matched_image)
+    img=cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
+    plt.imshow(img)
+    print("MATCH FOUND WITH ACURRACY OF :",100*max_score,"%")
+    
